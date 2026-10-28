@@ -1,0 +1,17 @@
+{
+  "name": "Freitas Nettoyage ERP",
+  "short_name": "Freitas ERP",
+  "description": "Sistema de Gestão Empresarial & Operações - Freitas Nettoyage",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#0284c7",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

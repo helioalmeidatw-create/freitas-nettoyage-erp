@@ -1,0 +1,15 @@
+{
+  "name": "freitas-nettoyage-erp",
+  "version": "1.0.0",
+  "description": "Freitas Nettoyage ERP - Sistema de Gestão Empresarial",
+  "scripts": {
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "build": "npm run build --prefix client && npm run build --prefix server",
+    "start": "npm start --prefix server",
+    "render-build": "npm install --prefix client && npm run build --prefix client && npm install --prefix server && npm run build --prefix server"
+  },
+  "keywords": ["erp", "cleaning", "freitas-nettoyage", "management"],
+  "author": "Freitas Nettoyage",
+  "license": "ISC"
+}
