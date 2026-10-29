@@ -57,6 +57,39 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
   });
 });
 
+app.post('/api/auth/change-password', (req: Request, res: Response) => {
+  const { email, currentPassword, newPassword } = req.body;
+  if (!email || !currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
+  }
+
+  const users = db.getCollection('users');
+  const normalizedEmail = (email || '').toLowerCase().trim();
+  const user = users.find(u => {
+    const uEmail = u.email.toLowerCase().trim();
+    return uEmail === normalizedEmail || 
+      (normalizedEmail === 'admin@freitas-nettoyage.com' && uEmail === 'admin@cleanpro.com') ||
+      (normalizedEmail === 'admin@cleanpro.com' && uEmail === 'admin@freitas-nettoyage.com');
+  });
+
+  if (!user || user.password !== currentPassword) {
+    return res.status(401).json({ error: 'A palavra-passe atual está incorreta.' });
+  }
+
+  user.password = newPassword;
+  db.update('users', user.id, { password: newPassword });
+  db.logAudit(user.id, user.name, 'PASSWORD_CHANGE', 'Palavra-passe do utilizador alterada com sucesso.');
+  
+  res.json({ success: true, message: 'Palavra-passe atualizada com sucesso!' });
+});
+
+app.put('/api/users/:id', (req: Request, res: Response) => {
+  const updated = db.update('users', req.params.id, req.body);
+  if (!updated) return res.status(404).json({ error: 'Utilizador não encontrado.' });
+  const { password: _, ...safeUser } = updated;
+  res.json(safeUser);
+});
+
 app.get('/api/users', (req: Request, res: Response) => {
   const users = db.getCollection('users').map(({ password, ...u }) => u);
   res.json(users);

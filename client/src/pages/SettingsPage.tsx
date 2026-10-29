@@ -1,20 +1,29 @@
 import React, { useState } from 'react';
 import { 
   Settings, Save, Palette, Building, Phone, Mail, Globe, 
-  CreditCard, ShieldCheck, Database, RefreshCw, Download, Upload 
+  CreditCard, ShieldCheck, Database, RefreshCw, Download, Upload,
+  Lock, KeyRound, CheckCircle2
 } from 'lucide-react';
 import { useI18n } from '../context/I18nContext';
 import { useCompany } from '../context/CompanyContext';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import type { CompanySettings } from '../types';
 
 export const SettingsPage: React.FC = () => {
   const { t } = useI18n();
   const { settings, updateSettings } = useCompany();
+  const { user } = useAuth();
   const toast = useToast();
 
   const [formData, setFormData] = useState<CompanySettings>(settings);
   const [saving, setSaving] = useState(false);
+
+  // Security / Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPass, setChangingPass] = useState(false);
 
   const presetColors = [
     { label: 'Azul Oceano', hex: '#0284c7' },
@@ -35,6 +44,49 @@ export const SettingsPage: React.FC = () => {
       toast.error('Erro ao guardar configurações.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.warning('Preencha todos os campos da palavra-passe.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('A nova palavra-passe e a confirmação não coincidem.');
+      return;
+    }
+    if (newPassword.length < 4) {
+      toast.warning('A nova palavra-passe deve ter pelo menos 4 caracteres.');
+      return;
+    }
+
+    setChangingPass(true);
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user?.email || 'admin@freitas-nettoyage.com',
+          currentPassword,
+          newPassword
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Palavra-passe alterada com sucesso! O seu acesso permanece ativo.');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        toast.error(data.error || 'Erro ao alterar palavra-passe.');
+      }
+    } catch (err) {
+      toast.error('Erro de conexão ao alterar palavra-passe.');
+    } finally {
+      setChangingPass(false);
     }
   };
 
@@ -274,6 +326,64 @@ export const SettingsPage: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* Security & Password Change */}
+      <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+          <KeyRound className="w-4 h-4 text-sky-600" />
+          <h3 className="text-sm font-bold text-slate-900">Segurança & Alteração de Palavra-passe</h3>
+        </div>
+
+        <p className="text-xs text-slate-500">
+          Altere a palavra-passe da sua conta (<strong className="text-slate-700">{user?.email || 'admin@freitas-nettoyage.com'}</strong>). Você continuará com acesso imediato e a nova senha será exigida nos próximos inícios de sessão em qualquer dispositivo.
+        </p>
+
+        <form onSubmit={handleChangePassword} className="space-y-4 max-w-xl pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Palavra-passe Atual</label>
+              <input
+                type="password"
+                placeholder="Senha atual"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Nova Palavra-passe</label>
+              <input
+                type="password"
+                placeholder="Mínimo 4 caracteres"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Confirmar Nova Senha</label>
+              <input
+                type="password"
+                placeholder="Repita a nova senha"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-start">
+            <button
+              type="submit"
+              disabled={changingPass}
+              className="px-5 py-2 text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow transition-all flex items-center gap-2"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>{changingPass ? 'A atualizar...' : 'Atualizar Palavra-passe'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
 
       {/* Database Maintenance & Backups */}
       <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
